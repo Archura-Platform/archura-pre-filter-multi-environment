@@ -32,28 +32,25 @@ public class MultiEnvironment implements Consumer<ServerRequest>, Configurable {
             final ObjectMapper objectMapper = context.getObjectMapper();
             final MultiEnvironmentConfiguration config = getConfig(objectMapper);
             if (isHostConfigValid(config.getHost())) {
-                handleHostNameBasedEnvironment(request, attributes, config);
+                final MultiEnvironmentConfiguration.Host hostConfig = config.getHost();
+                final String input = request.headers().firstHeader(HOST_HEADER_NAME);
+                final String regex = hostConfig.getRegex();
+                final String groupName = hostConfig.getGroupName();
+                setEnvironment(attributes, regex, groupName, input);
             }
-        }
-
-    }
-
-    private void handleHostNameBasedEnvironment(ServerRequest request, Map<String, Object> attributes, MultiEnvironmentConfiguration config) {
-        final String host = request.headers().firstHeader(HOST_HEADER_NAME);
-        if (nonNull(host)) {
-            final String regex = config.getHost().getRegex();
-            final String groupName = config.getHost().getGroupName();
-            Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-            Matcher matcher = pattern.matcher(host);
-            boolean matchFound = matcher.find();
-            if (matchFound) {
-                if (notEmpty(groupName)) {
-                    final String environmentName = matcher.group(groupName);
-                    attributes.put(ATTRIBUTE_ENVIRONMENT, environmentName);
-                } else {
-                    final String environmentName = matcher.group(0);
-                    attributes.put(ATTRIBUTE_ENVIRONMENT, environmentName);
-                }
+            if (isHeaderConfigValid(config.getHeader())) {
+                final MultiEnvironmentConfiguration.Header headerConfig = config.getHeader();
+                final String input = request.headers().firstHeader(headerConfig.getName());
+                final String regex = headerConfig.getRegex();
+                final String groupName = headerConfig.getGroupName();
+                setEnvironment(attributes, regex, groupName, input);
+            }
+            if (isPathConfigValid(config.getPath())) {
+                final MultiEnvironmentConfiguration.Path pathConfig = config.getPath();
+                final String input = request.path();
+                final String regex = pathConfig.getRegex();
+                final String groupName = pathConfig.getGroupName();
+                setEnvironment(attributes, regex, groupName, input);
             }
         }
     }
@@ -66,8 +63,34 @@ public class MultiEnvironment implements Consumer<ServerRequest>, Configurable {
         }
     }
 
+    private boolean isPathConfigValid(MultiEnvironmentConfiguration.Path path) {
+        return nonNull(path) && nonNull(path.getRegex()) && nonNull(path.getGroupName()) && notEmpty(path.getRegex());
+    }
+
+    private boolean isHeaderConfigValid(MultiEnvironmentConfiguration.Header header) {
+        return nonNull(header) && nonNull(header.getName()) && nonNull(header.getRegex()) && nonNull(header.getGroupName())
+                && notEmpty(header.getName()) && notEmpty(header.getRegex());
+    }
+
     private boolean isHostConfigValid(MultiEnvironmentConfiguration.Host host) {
         return nonNull(host) && nonNull(host.getGroupName()) && nonNull(host.getRegex()) && notEmpty(host.getRegex());
+    }
+
+    private void setEnvironment(Map<String, Object> attributes, String regex, String groupName, String input) {
+        if (nonNull(input)) {
+            Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+            Matcher matcher = pattern.matcher(input);
+            boolean matchFound = matcher.find();
+            if (matchFound) {
+                if (notEmpty(groupName)) {
+                    final String environmentName = matcher.group(groupName);
+                    attributes.put(ATTRIBUTE_ENVIRONMENT, environmentName);
+                } else {
+                    final String environmentName = matcher.group(0);
+                    attributes.put(ATTRIBUTE_ENVIRONMENT, environmentName);
+                }
+            }
+        }
     }
 
     private boolean notEmpty(String value) {

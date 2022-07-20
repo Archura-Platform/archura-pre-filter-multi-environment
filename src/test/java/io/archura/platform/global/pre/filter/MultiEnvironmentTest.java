@@ -17,6 +17,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static io.archura.platform.global.pre.filter.MultiEnvironment.ATTRIBUTE_ENVIRONMENT;
+import static io.archura.platform.global.pre.filter.MultiEnvironment.DEFAULT_ENVIRONMENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,13 +50,13 @@ class MultiEnvironmentTest {
 
     @Test
     void should_SetEnvironmentToDefault_When_NoConfigurationProvided() {
-        final String expectedEnvironment = "DEFAULT";
+        final String expectedEnvironment = DEFAULT_ENVIRONMENT;
         when(request.attributes()).thenReturn(attributes);
         attributes.put(Context.class.getSimpleName(), context);
 
         multiEnvironment.accept(request);
 
-        String actualEnvironment = String.valueOf(attributes.get("ARCHURA_REQUEST_ENVIRONMENT"));
+        String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
         assertEquals(expectedEnvironment, actualEnvironment);
     }
 
@@ -75,17 +77,17 @@ class MultiEnvironmentTest {
         when(request.attributes()).thenReturn(attributes);
         when(context.getObjectMapper()).thenReturn(objectMapper);
         attributes.put(Context.class.getSimpleName(), context);
-        final String expectedEnvironment = "DEFAULT";
+        final String expectedEnvironment = DEFAULT_ENVIRONMENT;
         multiEnvironment.setConfiguration(Collections.emptyMap());
 
         multiEnvironment.accept(request);
 
-        String actualEnvironment = String.valueOf(attributes.get("ARCHURA_REQUEST_ENVIRONMENT"));
+        String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
         assertEquals(expectedEnvironment, actualEnvironment);
     }
 
     @Test
-    void should_SetEnvironmentToDefault_When_HostConfigurationMatches() throws JsonProcessingException {
+    void should_SetEnvironment_When_HostConfigurationMatches() throws JsonProcessingException {
         final String configurationOnlyHost = """
                 {
                     "host": {
@@ -107,12 +109,12 @@ class MultiEnvironmentTest {
 
         multiEnvironment.accept(request);
 
-        String actualEnvironment = String.valueOf(attributes.get("ARCHURA_REQUEST_ENVIRONMENT"));
+        String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
         assertEquals(expectedEnvironment, actualEnvironment);
     }
 
     @Test
-    void should_SetEnvironmentToDefault_When_HostConfigurationMatchesToGroup() throws JsonProcessingException {
+    void should_SetEnvironment_When_HostConfigurationMatchesToGroup() throws JsonProcessingException {
         final String configurationOnlyHostWithGroup = """
                 {
                     "host": {
@@ -135,7 +137,89 @@ class MultiEnvironmentTest {
 
         multiEnvironment.accept(request);
 
-        String actualEnvironment = String.valueOf(attributes.get("ARCHURA_REQUEST_ENVIRONMENT"));
+        String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
+        assertEquals(expectedEnvironment, actualEnvironment);
+    }
+
+    @Test
+    void should_SetEnvironment_When_HeaderConfigurationMatches() throws JsonProcessingException {
+        final String configurationOnlyHost = """
+                {
+                    "header": {
+                        "name": "X-Archura-Environment",
+                        "groupName": "",
+                        "regex": ".*"
+                    }
+                }
+                """;
+        when(request.attributes()).thenReturn(attributes);
+        when(request.headers()).thenReturn(headers);
+        when(context.getObjectMapper()).thenReturn(objectMapper);
+        attributes.put(Context.class.getSimpleName(), context);
+        final String expectedEnvironment = "test-archura-io";
+        when(headers.firstHeader("X-Archura-Environment")).thenReturn(expectedEnvironment);
+        final JsonNode jsonNode = objectMapper.readValue(configurationOnlyHost, JsonNode.class);
+        final Map<String, Object> config = objectMapper.convertValue(jsonNode, new TypeReference<>() {
+        });
+        multiEnvironment.setConfiguration(config);
+
+        multiEnvironment.accept(request);
+
+        String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
+        assertEquals(expectedEnvironment, actualEnvironment);
+    }
+
+    @Test
+    void should_SetEnvironment_When_HeaderConfigurationMatchesToGroup() throws JsonProcessingException {
+        final String configurationOnlyHost = """
+                {
+                    "header": {
+                        "name": "X-Archura-Environment",
+                        "groupName": "environment",
+                        "regex": "(?<environment>.*)-archura-io"
+                    }
+                }
+                """;
+        when(request.attributes()).thenReturn(attributes);
+        when(request.headers()).thenReturn(headers);
+        when(context.getObjectMapper()).thenReturn(objectMapper);
+        attributes.put(Context.class.getSimpleName(), context);
+        final String expectedEnvironment = "test";
+        when(headers.firstHeader("X-Archura-Environment")).thenReturn("test-archura-io");
+        final JsonNode jsonNode = objectMapper.readValue(configurationOnlyHost, JsonNode.class);
+        final Map<String, Object> config = objectMapper.convertValue(jsonNode, new TypeReference<>() {
+        });
+        multiEnvironment.setConfiguration(config);
+
+        multiEnvironment.accept(request);
+
+        String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
+        assertEquals(expectedEnvironment, actualEnvironment);
+    }
+
+    @Test
+    void should_SetEnvironment_When_PathConfigurationMatches() throws JsonProcessingException {
+        final String configurationOnlyHost = """
+                {
+                    "path": {
+                        "groupName": "",
+                        "regex": "(?:[^\\/]|\\/\\/)+"
+                    }
+                }
+                """;
+        when(request.attributes()).thenReturn(attributes);
+        when(request.path()).thenReturn("/test/some/other/987/index.html?a=1&b=2");
+        when(context.getObjectMapper()).thenReturn(objectMapper);
+        attributes.put(Context.class.getSimpleName(), context);
+        final String expectedEnvironment = "test";
+        final JsonNode jsonNode = objectMapper.readValue(configurationOnlyHost, JsonNode.class);
+        final Map<String, Object> config = objectMapper.convertValue(jsonNode, new TypeReference<>() {
+        });
+        multiEnvironment.setConfiguration(config);
+
+        multiEnvironment.accept(request);
+
+        String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
         assertEquals(expectedEnvironment, actualEnvironment);
     }
 
