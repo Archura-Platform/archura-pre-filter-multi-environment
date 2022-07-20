@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.archura.platform.context.Context;
 import io.archura.platform.exception.ConfigurationException;
 import io.archura.platform.function.Configurable;
+import io.archura.platform.logging.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.function.ServerRequest;
 
@@ -22,37 +23,45 @@ public class MultiEnvironment implements Consumer<ServerRequest>, Configurable {
     public static final String DEFAULT_ENVIRONMENT = "DEFAULT";
     public static final String HOST_HEADER_NAME = "host";
     private Map<String, Object> configuration;
+    private Logger logger;
 
     @Override
     public void accept(ServerRequest request) {
         final Map<String, Object> attributes = request.attributes();
+        final Context context = (Context) attributes.get(Context.class.getSimpleName());
+        logger = context.getLogger();
+        logger.debug("configuration: %s", configuration);
         attributes.put(ATTRIBUTE_ENVIRONMENT, DEFAULT_ENVIRONMENT);
         if (nonNull(configuration)) {
-            final Context context = (Context) attributes.get(Context.class.getSimpleName());
             final ObjectMapper objectMapper = context.getObjectMapper();
             final MultiEnvironmentConfiguration config = getConfig(objectMapper);
+            logger.debug("MultiEnvironmentConfiguration config: %s", config);
             if (isHostConfigValid(config.getHost())) {
+                logger.debug("Host configuration is valid.");
                 final MultiEnvironmentConfiguration.Host hostConfig = config.getHost();
                 final String input = request.headers().firstHeader(HOST_HEADER_NAME);
                 final String regex = hostConfig.getRegex();
                 final String groupName = hostConfig.getGroupName();
-                setEnvironment(attributes, regex, groupName, input);
+                handleEnvironment(attributes, regex, groupName, input);
             }
             if (isHeaderConfigValid(config.getHeader())) {
+                logger.debug("Header configuration is valid.");
                 final MultiEnvironmentConfiguration.Header headerConfig = config.getHeader();
                 final String input = request.headers().firstHeader(headerConfig.getName());
                 final String regex = headerConfig.getRegex();
                 final String groupName = headerConfig.getGroupName();
-                setEnvironment(attributes, regex, groupName, input);
+                handleEnvironment(attributes, regex, groupName, input);
             }
             if (isPathConfigValid(config.getPath())) {
+                logger.debug("Path configuration is valid.");
                 final MultiEnvironmentConfiguration.Path pathConfig = config.getPath();
                 final String input = request.path();
                 final String regex = pathConfig.getRegex();
                 final String groupName = pathConfig.getGroupName();
-                setEnvironment(attributes, regex, groupName, input);
+                handleEnvironment(attributes, regex, groupName, input);
             }
         }
+        logger.debug("Filter set the environment value to: %s", attributes.get(ATTRIBUTE_ENVIRONMENT));
     }
 
     private MultiEnvironmentConfiguration getConfig(ObjectMapper objectMapper) {
@@ -76,7 +85,7 @@ public class MultiEnvironment implements Consumer<ServerRequest>, Configurable {
         return nonNull(host) && nonNull(host.getGroupName()) && nonNull(host.getRegex()) && notEmpty(host.getRegex());
     }
 
-    private void setEnvironment(Map<String, Object> attributes, String regex, String groupName, String input) {
+    private void handleEnvironment(Map<String, Object> attributes, String regex, String groupName, String input) {
         if (nonNull(input)) {
             Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
             Matcher matcher = pattern.matcher(input);
@@ -89,6 +98,7 @@ public class MultiEnvironment implements Consumer<ServerRequest>, Configurable {
                     final String environmentName = matcher.group(0);
                     attributes.put(ATTRIBUTE_ENVIRONMENT, environmentName);
                 }
+                logger.debug("Set environment value to: %s", attributes.get(ATTRIBUTE_ENVIRONMENT));
             }
         }
     }
