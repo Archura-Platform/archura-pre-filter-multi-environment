@@ -6,7 +6,6 @@ import io.archura.platform.context.Context;
 import io.archura.platform.exception.ConfigurationException;
 import io.archura.platform.function.Configurable;
 import io.archura.platform.logging.Logger;
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.function.ServerRequest;
 
 import java.util.Map;
@@ -16,7 +15,6 @@ import java.util.regex.Pattern;
 
 import static java.util.Objects.nonNull;
 
-@Component
 public class MultiEnvironment implements Consumer<ServerRequest>, Configurable {
 
     public static final String ATTRIBUTE_ENVIRONMENT = "ARCHURA_REQUEST_ENVIRONMENT";
