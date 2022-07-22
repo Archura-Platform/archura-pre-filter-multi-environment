@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.archura.platform.context.Context;
 import io.archura.platform.exception.ConfigurationException;
+import io.archura.platform.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +23,7 @@ import static io.archura.platform.global.pre.filter.MultiEnvironment.DEFAULT_ENV
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +41,9 @@ class MultiEnvironmentTest {
     @Mock
     private Context context;
 
+    @Mock
+    private Logger logger;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, Object> attributes = new HashMap<>();
 
@@ -46,6 +51,8 @@ class MultiEnvironmentTest {
     void setup() {
         multiEnvironment = new MultiEnvironment();
         attributes.clear();
+        when(context.getLogger()).thenReturn(logger);
+        doNothing().when(logger).debug(any(), any());
     }
 
     @Test
@@ -54,7 +61,7 @@ class MultiEnvironmentTest {
         when(request.attributes()).thenReturn(attributes);
         attributes.put(Context.class.getSimpleName(), context);
 
-        multiEnvironment.accept(request);
+        multiEnvironment.apply(request);
 
         String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
         assertEquals(expectedEnvironment, actualEnvironment);
@@ -69,7 +76,7 @@ class MultiEnvironmentTest {
         attributes.put(Context.class.getSimpleName(), context);
         multiEnvironment.setConfiguration(Collections.emptyMap());
 
-        assertThrows(ConfigurationException.class, () -> multiEnvironment.accept(request));
+        assertThrows(ConfigurationException.class, () -> multiEnvironment.apply(request));
     }
 
     @Test
@@ -80,7 +87,7 @@ class MultiEnvironmentTest {
         final String expectedEnvironment = DEFAULT_ENVIRONMENT;
         multiEnvironment.setConfiguration(Collections.emptyMap());
 
-        multiEnvironment.accept(request);
+        multiEnvironment.apply(request);
 
         String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
         assertEquals(expectedEnvironment, actualEnvironment);
@@ -107,7 +114,7 @@ class MultiEnvironmentTest {
         });
         multiEnvironment.setConfiguration(config);
 
-        multiEnvironment.accept(request);
+        multiEnvironment.apply(request);
 
         String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
         assertEquals(expectedEnvironment, actualEnvironment);
@@ -135,7 +142,7 @@ class MultiEnvironmentTest {
         });
         multiEnvironment.setConfiguration(config);
 
-        multiEnvironment.accept(request);
+        multiEnvironment.apply(request);
 
         String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
         assertEquals(expectedEnvironment, actualEnvironment);
@@ -163,7 +170,7 @@ class MultiEnvironmentTest {
         });
         multiEnvironment.setConfiguration(config);
 
-        multiEnvironment.accept(request);
+        multiEnvironment.apply(request);
 
         String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
         assertEquals(expectedEnvironment, actualEnvironment);
@@ -191,7 +198,7 @@ class MultiEnvironmentTest {
         });
         multiEnvironment.setConfiguration(config);
 
-        multiEnvironment.accept(request);
+        multiEnvironment.apply(request);
 
         String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
         assertEquals(expectedEnvironment, actualEnvironment);
@@ -217,7 +224,7 @@ class MultiEnvironmentTest {
         });
         multiEnvironment.setConfiguration(config);
 
-        multiEnvironment.accept(request);
+        multiEnvironment.apply(request);
 
         String actualEnvironment = String.valueOf(attributes.get(ATTRIBUTE_ENVIRONMENT));
         assertEquals(expectedEnvironment, actualEnvironment);

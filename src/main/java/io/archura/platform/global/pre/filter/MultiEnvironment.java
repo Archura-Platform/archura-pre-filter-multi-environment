@@ -9,13 +9,13 @@ import io.archura.platform.logging.Logger;
 import org.springframework.web.servlet.function.ServerRequest;
 
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.util.Objects.nonNull;
 
-public class MultiEnvironment implements Consumer<ServerRequest>, Configurable {
+public class MultiEnvironment implements UnaryOperator<ServerRequest>, Configurable {
 
     public static final String ATTRIBUTE_ENVIRONMENT = "ARCHURA_REQUEST_ENVIRONMENT";
     public static final String DEFAULT_ENVIRONMENT = "DEFAULT";
@@ -24,7 +24,7 @@ public class MultiEnvironment implements Consumer<ServerRequest>, Configurable {
     private Logger logger;
 
     @Override
-    public void accept(ServerRequest request) {
+    public ServerRequest apply(ServerRequest request) {
         final Map<String, Object> attributes = request.attributes();
         final Context context = (Context) attributes.get(Context.class.getSimpleName());
         logger = context.getLogger();
@@ -60,6 +60,7 @@ public class MultiEnvironment implements Consumer<ServerRequest>, Configurable {
             }
         }
         logger.debug("Filter set the environment value to: %s", attributes.get(ATTRIBUTE_ENVIRONMENT));
+        return request;
     }
 
     private MultiEnvironmentConfiguration getConfig(ObjectMapper objectMapper) {
