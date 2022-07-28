@@ -1,11 +1,11 @@
-package io.archura.platform.global.pre.filter;
+package io.archura.platform.imperativeshell.global.pre.filter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.archura.platform.context.Context;
-import io.archura.platform.exception.ConfigurationException;
-import io.archura.platform.function.Configurable;
-import io.archura.platform.logging.Logger;
+import io.archura.platform.api.context.Context;
+import io.archura.platform.api.logger.Logger;
+import io.archura.platform.api.type.Configurable;
+import io.archura.platform.imperativeshell.global.pre.filter.exception.ConfigurationException;
 import org.springframework.web.servlet.function.ServerRequest;
 
 import java.util.Map;

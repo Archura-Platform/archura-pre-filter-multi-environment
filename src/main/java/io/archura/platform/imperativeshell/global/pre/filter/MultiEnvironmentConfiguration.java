@@ -1,4 +1,4 @@
-package io.archura.platform.global.pre.filter;
+package io.archura.platform.imperativeshell.global.pre.filter;
 
 import lombok.Data;
 
