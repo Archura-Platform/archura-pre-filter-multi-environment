@@ -79,7 +79,7 @@
                                     <mainClass>io.archura.platform.imperativeshell.global.pre.filter.MultiEnvironment</mainClass>
                                 </transformer>
                             </transformers>
-                            <finalName>io.archura.platform.global.pre.filter.MultiEnvironment-0.0.1</finalName>
+                            <finalName>io.archura.platform.imperativeshell.global.pre.filter.MultiEnvironment-0.0.1</finalName>
                         </configuration>
                     </execution>
                 </executions>
