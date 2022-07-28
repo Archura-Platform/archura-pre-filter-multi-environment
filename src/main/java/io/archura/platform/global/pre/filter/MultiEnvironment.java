@@ -18,7 +18,7 @@ import static java.util.Objects.nonNull;
 public class MultiEnvironment implements UnaryOperator<ServerRequest>, Configurable {
 
     public static final String ATTRIBUTE_ENVIRONMENT = "ARCHURA_REQUEST_ENVIRONMENT";
-    public static final String DEFAULT_ENVIRONMENT = "DEFAULT";
+    public static final String DEFAULT_ENVIRONMENT = "default";
     public static final String HOST_HEADER_NAME = "host";
     private Map<String, Object> configuration;
     private Logger logger;
