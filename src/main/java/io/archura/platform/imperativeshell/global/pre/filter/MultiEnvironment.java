@@ -3,10 +3,10 @@ package io.archura.platform.imperativeshell.global.pre.filter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.archura.platform.api.context.Context;
+import io.archura.platform.api.http.HttpServerRequest;
 import io.archura.platform.api.logger.Logger;
 import io.archura.platform.api.type.Configurable;
 import io.archura.platform.imperativeshell.global.pre.filter.exception.ConfigurationException;
-import org.springframework.web.servlet.function.ServerRequest;
 
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 
 import static java.util.Objects.nonNull;
 
-public class MultiEnvironment implements UnaryOperator<ServerRequest>, Configurable {
+public class MultiEnvironment implements UnaryOperator<HttpServerRequest>, Configurable {
 
     public static final String ATTRIBUTE_ENVIRONMENT = "ARCHURA_REQUEST_ENVIRONMENT";
     public static final String DEFAULT_ENVIRONMENT = "default";
@@ -24,8 +24,8 @@ public class MultiEnvironment implements UnaryOperator<ServerRequest>, Configura
     private Logger logger;
 
     @Override
-    public ServerRequest apply(ServerRequest request) {
-        final Map<String, Object> attributes = request.attributes();
+    public HttpServerRequest apply(HttpServerRequest request) {
+        final Map<String, Object> attributes = request.getAttributes();
         final Context context = (Context) attributes.get(Context.class.getSimpleName());
         logger = context.getLogger();
         logger.debug("configuration: %s", configuration);
@@ -37,7 +37,7 @@ public class MultiEnvironment implements UnaryOperator<ServerRequest>, Configura
             if (isHostConfigValid(config.getHost())) {
                 logger.debug("Host configuration is valid.");
                 final MultiEnvironmentConfiguration.Host hostConfig = config.getHost();
-                final String input = request.headers().firstHeader(HOST_HEADER_NAME);
+                final String input = request.getFirstHeader(HOST_HEADER_NAME);
                 final String regex = hostConfig.getRegex();
                 final String groupName = hostConfig.getGroupName();
                 handleEnvironment(attributes, regex, groupName, input);
@@ -45,7 +45,7 @@ public class MultiEnvironment implements UnaryOperator<ServerRequest>, Configura
             if (isHeaderConfigValid(config.getHeader())) {
                 logger.debug("Header configuration is valid.");
                 final MultiEnvironmentConfiguration.Header headerConfig = config.getHeader();
-                final String input = request.headers().firstHeader(headerConfig.getName());
+                final String input = request.getFirstHeader(headerConfig.getName());
                 final String regex = headerConfig.getRegex();
                 final String groupName = headerConfig.getGroupName();
                 handleEnvironment(attributes, regex, groupName, input);
@@ -53,7 +53,7 @@ public class MultiEnvironment implements UnaryOperator<ServerRequest>, Configura
             if (isPathConfigValid(config.getPath())) {
                 logger.debug("Path configuration is valid.");
                 final MultiEnvironmentConfiguration.Path pathConfig = config.getPath();
-                final String input = request.path();
+                final String input = request.getRequestURI().getPath();
                 final String regex = pathConfig.getRegex();
                 final String groupName = pathConfig.getGroupName();
                 handleEnvironment(attributes, regex, groupName, input);

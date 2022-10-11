@@ -5,18 +5,20 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.archura.platform.api.context.Context;
+import io.archura.platform.api.http.HttpServerRequest;
 import io.archura.platform.api.logger.Logger;
-import io.archura.platform.imperativeshell.global.pre.filter.exception.ConfigurationException;
 import io.archura.platform.imperativeshell.global.pre.filter.MultiEnvironment;
+import io.archura.platform.imperativeshell.global.pre.filter.exception.ConfigurationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.servlet.function.ServerRequest;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static io.archura.platform.imperativeshell.global.pre.filter.MultiEnvironment.ATTRIBUTE_ENVIRONMENT;
@@ -34,10 +36,8 @@ class MultiEnvironmentTest {
     private MultiEnvironment multiEnvironment;
 
     @Mock
-    private ServerRequest request;
+    private HttpServerRequest request;
 
-    @Mock
-    private ServerRequest.Headers headers;
 
     @Mock
     private Context context;
@@ -47,6 +47,7 @@ class MultiEnvironmentTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, Object> attributes = new HashMap<>();
+    private Map<String, List<String>> headers = new HashMap<>();
 
     @BeforeEach
     void setup() {
@@ -59,7 +60,7 @@ class MultiEnvironmentTest {
     @Test
     void should_SetEnvironmentToDefault_When_NoConfigurationProvided() {
         final String expectedEnvironment = DEFAULT_ENVIRONMENT;
-        when(request.attributes()).thenReturn(attributes);
+        when(request.getAttributes()).thenReturn(attributes);
         attributes.put(Context.class.getSimpleName(), context);
 
         multiEnvironment.apply(request);
@@ -73,7 +74,7 @@ class MultiEnvironmentTest {
         final ObjectMapper objectMapperMock = mock(ObjectMapper.class);
         when(context.getObjectMapper()).thenReturn(objectMapperMock);
         when(objectMapperMock.writeValueAsString(any())).thenThrow(JsonProcessingException.class);
-        when(request.attributes()).thenReturn(attributes);
+        when(request.getAttributes()).thenReturn(attributes);
         attributes.put(Context.class.getSimpleName(), context);
         multiEnvironment.setConfiguration(Collections.emptyMap());
 
@@ -82,7 +83,7 @@ class MultiEnvironmentTest {
 
     @Test
     void should_SetEnvironmentToDefault_When_EmptyConfigurationProvided() {
-        when(request.attributes()).thenReturn(attributes);
+        when(request.getAttributes()).thenReturn(attributes);
         when(context.getObjectMapper()).thenReturn(objectMapper);
         attributes.put(Context.class.getSimpleName(), context);
         final String expectedEnvironment = DEFAULT_ENVIRONMENT;
@@ -104,12 +105,11 @@ class MultiEnvironmentTest {
                     }
                 }
                 """;
-        when(request.attributes()).thenReturn(attributes);
-        when(request.headers()).thenReturn(headers);
+        when(request.getAttributes()).thenReturn(attributes);
         when(context.getObjectMapper()).thenReturn(objectMapper);
         attributes.put(Context.class.getSimpleName(), context);
         final String expectedEnvironment = "test.archura.io";
-        when(headers.firstHeader("host")).thenReturn(expectedEnvironment);
+        when(request.getFirstHeader("host")).thenReturn(expectedEnvironment);
         final JsonNode jsonNode = objectMapper.readValue(configurationOnlyHost, JsonNode.class);
         final Map<String, Object> config = objectMapper.convertValue(jsonNode, new TypeReference<>() {
         });
@@ -131,13 +131,12 @@ class MultiEnvironmentTest {
                     }
                 }
                 """;
-        when(request.attributes()).thenReturn(attributes);
-        when(request.headers()).thenReturn(headers);
+        when(request.getAttributes()).thenReturn(attributes);
         when(context.getObjectMapper()).thenReturn(objectMapper);
         attributes.put(Context.class.getSimpleName(), context);
         final String expectedEnvironment = "test";
         final String hostname = "test.archura.io";
-        when(headers.firstHeader("host")).thenReturn(hostname);
+        when(request.getFirstHeader("host")).thenReturn(hostname);
         final JsonNode jsonNode = objectMapper.readValue(configurationOnlyHostWithGroup, JsonNode.class);
         final Map<String, Object> config = objectMapper.convertValue(jsonNode, new TypeReference<>() {
         });
@@ -160,12 +159,11 @@ class MultiEnvironmentTest {
                     }
                 }
                 """;
-        when(request.attributes()).thenReturn(attributes);
-        when(request.headers()).thenReturn(headers);
+        when(request.getAttributes()).thenReturn(attributes);
         when(context.getObjectMapper()).thenReturn(objectMapper);
         attributes.put(Context.class.getSimpleName(), context);
         final String expectedEnvironment = "test-archura-io";
-        when(headers.firstHeader("X-Archura-Environment")).thenReturn(expectedEnvironment);
+        when(request.getFirstHeader("X-Archura-Environment")).thenReturn(expectedEnvironment);
         final JsonNode jsonNode = objectMapper.readValue(configurationOnlyHost, JsonNode.class);
         final Map<String, Object> config = objectMapper.convertValue(jsonNode, new TypeReference<>() {
         });
@@ -188,12 +186,11 @@ class MultiEnvironmentTest {
                     }
                 }
                 """;
-        when(request.attributes()).thenReturn(attributes);
-        when(request.headers()).thenReturn(headers);
+        when(request.getAttributes()).thenReturn(attributes);
         when(context.getObjectMapper()).thenReturn(objectMapper);
         attributes.put(Context.class.getSimpleName(), context);
         final String expectedEnvironment = "test";
-        when(headers.firstHeader("X-Archura-Environment")).thenReturn("test-archura-io");
+        when(request.getFirstHeader("X-Archura-Environment")).thenReturn("test-archura-io");
         final JsonNode jsonNode = objectMapper.readValue(configurationOnlyHost, JsonNode.class);
         final Map<String, Object> config = objectMapper.convertValue(jsonNode, new TypeReference<>() {
         });
@@ -215,8 +212,8 @@ class MultiEnvironmentTest {
                     }
                 }
                 """;
-        when(request.attributes()).thenReturn(attributes);
-        when(request.path()).thenReturn("/test/some/other/987/index.html?a=1&b=2");
+        when(request.getAttributes()).thenReturn(attributes);
+        when(request.getRequestURI()).thenReturn(URI.create("/test/some/other/987/index.html?a=1&b=2"));
         when(context.getObjectMapper()).thenReturn(objectMapper);
         attributes.put(Context.class.getSimpleName(), context);
         final String expectedEnvironment = "test";
