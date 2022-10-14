@@ -9,13 +9,14 @@ import io.archura.platform.api.type.Configurable;
 import io.archura.platform.imperativeshell.global.pre.filter.exception.ConfigurationException;
 
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.util.Objects.nonNull;
 
-public class MultiEnvironment implements UnaryOperator<HttpServerRequest>, Configurable {
+public class MultiEnvironment implements Consumer<HttpServerRequest>, Configurable {
 
     public static final String ATTRIBUTE_ENVIRONMENT = "ARCHURA_REQUEST_ENVIRONMENT";
     public static final String DEFAULT_ENVIRONMENT = "default";
@@ -24,7 +25,7 @@ public class MultiEnvironment implements UnaryOperator<HttpServerRequest>, Confi
     private Logger logger;
 
     @Override
-    public HttpServerRequest apply(HttpServerRequest request) {
+    public void accept(HttpServerRequest request) {
         final Map<String, Object> attributes = request.getAttributes();
         final Context context = (Context) attributes.get(Context.class.getSimpleName());
         logger = context.getLogger();
@@ -60,7 +61,6 @@ public class MultiEnvironment implements UnaryOperator<HttpServerRequest>, Confi
             }
         }
         logger.debug("Filter set the environment value to: %s", attributes.get(ATTRIBUTE_ENVIRONMENT));
-        return request;
     }
 
     private MultiEnvironmentConfiguration getConfig(ObjectMapper objectMapper) {
