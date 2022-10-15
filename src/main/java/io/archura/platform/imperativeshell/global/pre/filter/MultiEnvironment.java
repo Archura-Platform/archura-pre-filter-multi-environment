@@ -1,16 +1,16 @@
 package io.archura.platform.imperativeshell.global.pre.filter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.archura.platform.api.context.Context;
 import io.archura.platform.api.http.HttpServerRequest;
 import io.archura.platform.api.logger.Logger;
+import io.archura.platform.api.mapper.Mapper;
 import io.archura.platform.api.type.Configurable;
 import io.archura.platform.imperativeshell.global.pre.filter.exception.ConfigurationException;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,7 +32,7 @@ public class MultiEnvironment implements Consumer<HttpServerRequest>, Configurab
         logger.debug("configuration: %s", configuration);
         attributes.put(ATTRIBUTE_ENVIRONMENT, DEFAULT_ENVIRONMENT);
         if (nonNull(configuration)) {
-            final ObjectMapper objectMapper = context.getObjectMapper();
+            final Mapper objectMapper = context.getMapper();
             final MultiEnvironmentConfiguration config = getConfig(objectMapper);
             logger.debug("MultiEnvironmentConfiguration config: %s", config);
             if (isHostConfigValid(config.getHost())) {
@@ -63,10 +63,11 @@ public class MultiEnvironment implements Consumer<HttpServerRequest>, Configurab
         logger.debug("Filter set the environment value to: %s", attributes.get(ATTRIBUTE_ENVIRONMENT));
     }
 
-    private MultiEnvironmentConfiguration getConfig(ObjectMapper objectMapper) {
+    private MultiEnvironmentConfiguration getConfig(Mapper mapper) {
         try {
-            return objectMapper.readValue(objectMapper.writeValueAsString(configuration), MultiEnvironmentConfiguration.class);
-        } catch (JsonProcessingException e) {
+            String value = mapper.writeValueAsString(configuration);
+            return mapper.readValue(value.getBytes(StandardCharsets.UTF_8), MultiEnvironmentConfiguration.class);
+        } catch (IOException e) {
             throw new ConfigurationException(e);
         }
     }
